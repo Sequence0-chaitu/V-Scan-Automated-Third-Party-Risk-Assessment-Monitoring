@@ -1,0 +1,15 @@
+{
+  "_comment": "Set each value to true if the vendor complies, false otherwise.",
+
+  "encryption_at_rest":      false,
+  "encryption_in_transit":   false,
+  "access_control_policy":   false,
+  "mfa_enforced":            false,
+  "patch_management":        false,
+  "incident_response_plan":  false,
+  "security_awareness":      false,
+  "vendor_risk_program":     false,
+  "data_classification":     false,
+  "backup_restore_tested":   false,
+  "penetration_testing":     false
+}
