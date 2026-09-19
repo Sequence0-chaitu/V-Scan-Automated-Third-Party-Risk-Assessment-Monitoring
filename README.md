@@ -2,8 +2,6 @@
 
 **A GRC-focused security tool that evaluates vendor risk against ISO 27001 and NIST CSF controls, combining automated technical scanning with structured compliance questionnaires.**
 
-> Built as part of a hands-on cybersecurity/GRC portfolio to demonstrate practical understanding of third-party risk management (TPRM), control mapping, and risk scoring methodologies used in enterprise vendor risk programs.
-
 ---
 
 ## 1. Overview
@@ -11,8 +9,6 @@
 Organizations are required — under frameworks like **ISO 27001 (A.15 Supplier Relationships)** and the **NIST Cybersecurity Framework**, and by regulations such as **GDPR Art. 28** and **SOC 2 CC9** — to assess the security posture of third-party vendors before onboarding and periodically thereafter.
 
 **V-Scan automates the first pass of that assessment.** It scans a vendor's public-facing infrastructure for baseline security hygiene (HTTP security headers, SSL/TLS configuration) and combines those objective, automated findings with a structured compliance questionnaire, producing a single risk score and risk tier that mirrors how a real TPRM analyst would triage a vendor.
-
-**Why this matters for GRC roles:** vendor risk assessment is a recurring, high-volume task in compliance teams. This project demonstrates the ability to translate a manual, framework-driven review process into a repeatable, auditable, and partially automated workflow — a skill directly transferable to TPRM, vendor security review, and compliance operations roles.
 
 ---
 
@@ -191,23 +187,7 @@ python src/main.py --url https://example.com
 
 ---
 
-## 11. Skills Demonstrated
-
-- Third-party / vendor risk assessment methodology
-- Control mapping to ISO 27001 and NIST CSF
-- Risk scoring and tiering logic
-- API design and backend development (FastAPI)
-- Data persistence and dashboarding (SQLite, Grafana)
-- Containerized deployment (Docker Compose)
-
----
-
-## 12. Roadmap
-
-- [ ] Expand questionnaire library to cover SOC 2 and GDPR-specific controls
-- [ ] Add authenticated multi-user access for enterprise-style role separation
-- [ ] Automated PDF export of vendor risk reports
-- [ ] Cloud deployment (AWS/Azure) for a public-facing demo instance
+## 11.Disclaimer
 
 ---
 
