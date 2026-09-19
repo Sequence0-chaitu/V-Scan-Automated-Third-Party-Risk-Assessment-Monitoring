@@ -4,9 +4,9 @@ Automated security scanner that checks vendor URLs for HTTP security headers, SS
 
 ---
 
-## What's New: Web Dashboard
+## Web Dashboard
 
-V-Scan now ships with a built-in web dashboard so you can submit scans and view results directly in the browser — no terminal required.
+V-Scan ships with a built-in web dashboard so you can submit scans and view results directly in the browser — no terminal required.
 
 | Interface | URL | Purpose |
 |-----------|-----|---------|
@@ -80,9 +80,9 @@ Response:
 
 ---
 
-## CLI (still supported)
+## CLI (available)
 
-The CLI is still available via `docker exec`:
+The CLI is available via `docker exec`:
 
 ```bash
 docker exec -it scanner-app python src/main.py \
