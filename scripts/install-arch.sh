@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# V-Scan — Arch Linux Setup Script
+# V-Scan — (Arch)Linux Setup Script
 # Run once as a regular user with sudo privileges.
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
