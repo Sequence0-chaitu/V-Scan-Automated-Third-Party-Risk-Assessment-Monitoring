@@ -189,5 +189,7 @@ python src/main.py --url https://example.com
 
 ## 11.Disclaimer
 
+> **Disclaimer:** V-Scan is a compliance *aid*, not a legal guarantee. Always engage qualified legal counsel for formal compliance assessments.(This project is only for educational purposes)
+
 ---
 
