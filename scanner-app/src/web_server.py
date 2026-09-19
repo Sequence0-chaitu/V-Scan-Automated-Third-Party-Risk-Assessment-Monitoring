@@ -2,13 +2,12 @@
 web_server.py — FastAPI web interface for V-Scan
 Provides REST API + serves the dashboard UI
 """
-
 import json
 import logging
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +16,7 @@ from pydantic import BaseModel, HttpUrl
 from scanner import Scanner
 from scoring import ScoringEngine
 from database import Database
+from auth import require_api_key  # NEW
 
 log = logging.getLogger("vscan.web")
 
@@ -24,7 +24,6 @@ DB_PATH = os.getenv("SQLITE_DB_PATH", "/app/data/vscan.db")
 Q_PATH = os.getenv("QUESTIONNAIRE_PATH", "/app/questionnaire.json")
 
 app = FastAPI(title="V-Scan", description="Third-Party Risk Assessment API", version="1.0.0")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,7 +33,6 @@ app.add_middleware(
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
-
 class ScanRequest(BaseModel):
     url: str
     questionnaire: dict | None = None  # Optional override; uses default file if omitted
@@ -49,7 +47,6 @@ class ScanResponse(BaseModel):
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-
 def _load_default_questionnaire() -> dict:
     try:
         with open(Q_PATH) as f:
@@ -72,13 +69,14 @@ def _risk_level(score: float) -> str:
 
 
 # ── API Routes ───────────────────────────────────────────────────────────────
-
 @app.get("/api/health")
 async def health():
+    # Left unprotected intentionally — monitoring/uptime tools that hit this
+    # endpoint typically shouldn't need an API key.
     return {"status": "ok", "service": "vscan"}
 
 
-@app.post("/api/scan", response_model=ScanResponse)
+@app.post("/api/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
 async def run_scan(body: ScanRequest):
     """Submit a URL for security scanning."""
     url = body.url.strip()
@@ -117,7 +115,7 @@ async def run_scan(body: ScanRequest):
     )
 
 
-@app.get("/api/scans")
+@app.get("/api/scans", dependencies=[Depends(require_api_key)])
 async def list_scans(limit: int = 50):
     """Retrieve recent scans from the database."""
     try:
@@ -128,7 +126,7 @@ async def list_scans(limit: int = 50):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/api/scans/{scan_id}/checks")
+@app.get("/api/scans/{scan_id}/checks", dependencies=[Depends(require_api_key)])
 async def get_scan_checks(scan_id: int):
     """Get check breakdown for a specific scan."""
     try:
@@ -144,11 +142,14 @@ async def get_scan_checks(scan_id: int):
 
 
 # ── Dashboard UI (served at /) ───────────────────────────────────────────────
-
 DASHBOARD_HTML_PATH = Path(__file__).parent / "dashboard.html"
+
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
+    # Left unprotected — this serves the HTML page itself, not scan data.
+    # The dashboard's own JS calls will need the API key wired in (see note
+    # below) to actually fetch/submit scans from the browser.
     if DASHBOARD_HTML_PATH.exists():
         return HTMLResponse(content=DASHBOARD_HTML_PATH.read_text())
     return HTMLResponse(content="<h1>Dashboard not found</h1>", status_code=404)
