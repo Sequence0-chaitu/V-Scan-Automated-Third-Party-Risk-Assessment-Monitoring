@@ -6,7 +6,7 @@ Automated security scanner that checks vendor URLs for HTTP security headers, SS
 
 ## Web Dashboard
 
-V-Scan ships with a built-in web dashboard so you can submit scans and view results directly in the browser — no terminal required.
+V-Scan ships with a built-in web dashboard so you can submit scans and view results directly in the browser — no terminal required(If in need of terminal usage,refer below as mentioned).
 
 | Interface | URL | Purpose |
 |-----------|-----|---------|
