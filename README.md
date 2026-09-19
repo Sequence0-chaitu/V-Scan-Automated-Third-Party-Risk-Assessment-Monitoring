@@ -18,7 +18,7 @@ Organizations are required — under frameworks like **ISO 27001 (A.15 Supplier 
 - **Compliance questionnaire scoring** — 11 controls mapped to ISO 27001 and NIST CSF (e.g. encryption at rest, MFA enforcement)
 - **Weighted risk scoring engine** — produces a 0–100 score and a risk tier (LOW / MEDIUM / HIGH / CRITICAL)
 - **Web dashboard** — submit scans, view live progress, and review a per-control breakdown with control references, without touching a terminal
-- **REST API** — enables integration into a broader vendor onboarding workflow or ticketing system
+- **REST API** — enables integration into a broader vendor onboarding workflow or ticketing system, protected via API key authentication
 - **Historical trending via Grafana** — supports periodic reassessment and tracking of a vendor's risk posture over time
 - **CLI** — for scripted or batch scanning
 
@@ -64,6 +64,7 @@ vscan/
 │   ├── src/
 │   │   ├── main.py          # CLI entrypoint (Click)
 │   │   ├── web_server.py    # FastAPI web server
+│   │   ├── auth.py          # API key authentication
 │   │   ├── dashboard.html   # Web dashboard UI
 │   │   ├── scanner.py       # HTTP header & SSL/TLS checks
 │   │   ├── scoring.py       # Risk scoring engine
@@ -93,7 +94,7 @@ vscan/
 # 1. Clone and enter the project
 git clone <repo-url> && cd vscan
 
-# 2. (Optional) copy and edit environment variables
+# 2. Copy and edit environment variables — set VSCAN_API_KEY (see Section 8)
 cp .env .env.local
 
 # 3. Start all services
@@ -121,19 +122,38 @@ open http://localhost:8000
 
 ---
 
-## 8. REST API Reference
+## 8. Authentication
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Health check |
-| `POST` | `/api/scan` | Submit a new scan |
-| `GET` | `/api/scans?limit=50` | List recent scans |
-| `GET` | `/api/scans/{id}/checks` | Full control-level breakdown for a scan |
+All API endpoints except `/api/health` and the dashboard UI (`/`) require an API key, passed via the `X-API-Key` header. Set `VSCAN_API_KEY` in your `.env` file before starting the app:
+
+```bash
+VSCAN_API_KEY=your-secret-key-here
+```
+
+**Example — authenticated request:**
+
+```bash
+curl -H "X-API-Key: your-secret-key-here" http://localhost:8000/api/scans
+```
+
+Requests without a valid key receive a `401 Unauthorized` response. The comparison uses a constant-time check (`secrets.compare_digest`) to avoid leaking key information via response-timing differences.
+
+---
+
+## 9. REST API Reference
+
+| Method | Endpoint | Auth Required | Description |
+|---|---|---|---|
+| `GET` | `/api/health` | No | Health check |
+| `POST` | `/api/scan` | Yes | Submit a new scan |
+| `GET` | `/api/scans?limit=50` | Yes | List recent scans |
+| `GET` | `/api/scans/{id}/checks` | Yes | Full control-level breakdown for a scan |
 
 **Example — submit a scan:**
 
 ```bash
 curl -X POST http://localhost:8000/api/scan \
+  -H "X-API-Key: your-secret-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com",
@@ -158,7 +178,7 @@ curl -X POST http://localhost:8000/api/scan \
 
 ---
 
-## 9. CLI Usage
+## 10. CLI Usage
 
 ```bash
 # Via Docker
@@ -174,7 +194,7 @@ python src/main.py --url https://example.com
 
 ---
 
-## 10. Configuration
+## 11. Configuration
 
 | Variable | Default | Description |
 |---|---|---|
@@ -184,12 +204,12 @@ python src/main.py --url https://example.com
 | `SCANNER_LOG_LEVEL` | `INFO` | Log verbosity |
 | `GRAFANA_ADMIN_USER` | `admin` | Grafana login |
 | `GRAFANA_ADMIN_PASSWORD` | `admin` | Grafana password |
+| `VSCAN_API_KEY` | *(required)* | API key required for all protected endpoints — see Section 8 |
 
 ---
 
-## 11.Disclaimer
+## 12. Disclaimer
 
 > **Disclaimer:** V-Scan is a compliance *aid*, not a legal guarantee. Always engage qualified legal counsel for formal compliance assessments.(This project is only for educational purposes)
 
 ---
-
