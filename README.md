@@ -1,26 +1,101 @@
-# V-Scan — Third-Party Risk Assessment
+# V-Scan — Automated Third-Party Risk Assessment Platform
 
-Automated security scanner that checks vendor URLs for HTTP security headers, SSL/TLS configuration, and questionnaire-based compliance controls (ISO 27001 / NIST CSF).
+**A GRC-focused security tool that evaluates vendor risk against ISO 27001 and NIST CSF controls, combining automated technical scanning with structured compliance questionnaires.**
 
----
-
-## Web Dashboard
-
-V-Scan ships with a built-in web dashboard so you can submit scans and view results directly in the browser — no terminal required(If in need of terminal usage,refer below as mentioned).
-
-| Interface | URL | Purpose |
-|-----------|-----|---------|
-| **Web Dashboard** | `http://localhost:8000` | Submit scans, view live results, browse history |
-| **REST API** | `http://localhost:8000/api/` | Programmatic access (see endpoints below) |
-| **Grafana** | `http://localhost:3000` | Historical charts & compliance trends |
+> Built as part of a hands-on cybersecurity/GRC portfolio to demonstrate practical understanding of third-party risk management (TPRM), control mapping, and risk scoring methodologies used in enterprise vendor risk programs.
 
 ---
 
-## Quick Start
+## 1. Overview
+
+Organizations are required — under frameworks like **ISO 27001 (A.15 Supplier Relationships)** and the **NIST Cybersecurity Framework**, and by regulations such as **GDPR Art. 28** and **SOC 2 CC9** — to assess the security posture of third-party vendors before onboarding and periodically thereafter.
+
+**V-Scan automates the first pass of that assessment.** It scans a vendor's public-facing infrastructure for baseline security hygiene (HTTP security headers, SSL/TLS configuration) and combines those objective, automated findings with a structured compliance questionnaire, producing a single risk score and risk tier that mirrors how a real TPRM analyst would triage a vendor.
+
+**Why this matters for GRC roles:** vendor risk assessment is a recurring, high-volume task in compliance teams. This project demonstrates the ability to translate a manual, framework-driven review process into a repeatable, auditable, and partially automated workflow — a skill directly transferable to TPRM, vendor security review, and compliance operations roles.
+
+---
+
+## 2. Key Features
+
+- **Automated technical checks** — 9 checks covering HTTP security headers (HSTS, CSP, X-Frame-Options, etc.) and SSL/TLS certificate configuration
+- **Compliance questionnaire scoring** — 11 controls mapped to ISO 27001 and NIST CSF (e.g. encryption at rest, MFA enforcement)
+- **Weighted risk scoring engine** — produces a 0–100 score and a risk tier (LOW / MEDIUM / HIGH / CRITICAL)
+- **Web dashboard** — submit scans, view live progress, and review a per-control breakdown with control references, without touching a terminal
+- **REST API** — enables integration into a broader vendor onboarding workflow or ticketing system
+- **Historical trending via Grafana** — supports periodic reassessment and tracking of a vendor's risk posture over time
+- **CLI** — for scripted or batch scanning
+
+---
+
+## 3. Compliance Mapping
+
+| Category | Framework Reference | What V-Scan Checks |
+|---|---|---|
+| Supplier security | ISO 27001 A.5.19–A.5.23 | Encryption, access control, incident notification (via questionnaire) |
+| Protect function | NIST CSF PR.AC, PR.DS | MFA enforcement, encryption at rest/in transit |
+| Transport security | ISO 27001 A.8.24 | TLS/SSL configuration, certificate validity |
+| Secure configuration | NIST CSF PR.PT | HTTP security headers (HSTS, CSP, X-Frame-Options, etc.) |
+
+Each finding in the dashboard is tagged with its corresponding control reference, so results can be traced directly back to the framework requirement they support.
+
+---
+
+## 4. Risk Scoring Methodology
+
+| Source | Checks | Points Each | Max Points |
+|---|---|---|---|
+| Automated (headers + SSL) | 9 | 5 | 45 |
+| Questionnaire (ISO 27001 / NIST CSF) | 11 | 5 | 55 |
+| **Total** | | | **100** |
+
+| Score Range | Risk Level |
+|---|---|
+| ≥ 80 | LOW |
+| 60 – 79 | MEDIUM |
+| 40 – 59 | HIGH |
+| < 40 | CRITICAL |
+
+The 45/55 split is intentional: automated checks alone cannot confirm internal controls (e.g. whether MFA is actually enforced), so questionnaire attestations carry slightly more weight — consistent with how real TPRM programs treat self-reported controls as necessary but requiring independent validation over time.
+
+---
+
+## 5. Architecture
+
+```
+vscan/
+├── scanner-app/
+│   ├── src/
+│   │   ├── main.py          # CLI entrypoint (Click)
+│   │   ├── web_server.py    # FastAPI web server
+│   │   ├── dashboard.html   # Web dashboard UI
+│   │   ├── scanner.py       # HTTP header & SSL/TLS checks
+│   │   ├── scoring.py       # Risk scoring engine
+│   │   └── database.py      # SQLite persistence
+│   ├── questionnaire.json   # Default questionnaire values
+│   ├── requirements.txt
+│   └── Dockerfile
+├── grafana/                 # Provisioning & dashboards for historical trends
+├── scripts/                 # Utility scripts
+├── docker-compose.yml
+└── .env
+```
+
+**Tech stack:** Python 3.12, FastAPI, SQLite, Docker Compose, Grafana
+
+---
+
+## 6. Getting Started
+
+### Prerequisites
+- Docker & Docker Compose
+- (Optional, for local CLI use) Python ≥ 3.12
+
+### Quick Start
 
 ```bash
 # 1. Clone and enter the project
-git clone <repo> && cd vscan
+git clone <repo-url> && cd vscan
 
 # 2. (Optional) copy and edit environment variables
 cp .env .env.local
@@ -32,28 +107,34 @@ docker compose up --build -d
 open http://localhost:8000
 ```
 
----
-
-## Web Dashboard Usage
-
-1. **Enter a vendor URL** in the scan input (e.g. `github.com`)
-2. **Optionally configure questionnaire answers** by toggling *"Configure Questionnaire Answers"* — flip the switches for any controls the vendor has confirmed
-3. **Click RUN SCAN** — the progress bar animates through each check in real time
-4. **View the result** — score circle, risk badge (LOW / MEDIUM / HIGH / CRITICAL), and per-check breakdown with ISO 27001 and NIST CSF control references
-5. **Scan history** at the bottom updates automatically after every scan
+| Interface | URL | Purpose |
+|---|---|---|
+| Web Dashboard | `http://localhost:8000` | Submit scans, view live results, browse history |
+| REST API | `http://localhost:8000/api/` | Programmatic access |
+| Grafana | `http://localhost:3000` | Historical charts & compliance trend tracking |
 
 ---
 
-## REST API Endpoints
+## 7. Using the Web Dashboard
 
-| Method | Path | Description |
-|--------|------|-------------|
+1. Enter a vendor URL in the scan input (e.g. `github.com`)
+2. Optionally expand **"Configure Questionnaire Answers"** and toggle the controls the vendor has confirmed
+3. Click **RUN SCAN** — checks run in real time with progress feedback
+4. Review the result: overall score, risk tier badge, and a per-check breakdown with ISO 27001 / NIST CSF control references
+5. Scan history at the bottom of the dashboard updates automatically, supporting periodic reassessment
+
+---
+
+## 8. REST API Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
 | `GET` | `/api/health` | Health check |
 | `POST` | `/api/scan` | Submit a new scan |
-| `GET` | `/api/scans` | List recent scans (`?limit=50`) |
-| `GET` | `/api/scans/{id}/checks` | Full check breakdown for a scan |
+| `GET` | `/api/scans?limit=50` | List recent scans |
+| `GET` | `/api/scans/{id}/checks` | Full control-level breakdown for a scan |
 
-### POST /api/scan — example
+**Example — submit a scan:**
 
 ```bash
 curl -X POST http://localhost:8000/api/scan \
@@ -67,7 +148,8 @@ curl -X POST http://localhost:8000/api/scan \
   }'
 ```
 
-Response:
+**Response:**
+
 ```json
 {
   "scan_id": 1,
@@ -80,19 +162,15 @@ Response:
 
 ---
 
-## CLI (available)
-
-The CLI is available via `docker exec`:
+## 9. CLI Usage
 
 ```bash
+# Via Docker
 docker exec -it scanner-app python src/main.py \
   --url https://example.com \
   --questionnaire /app/questionnaire.json
-```
 
-Or run directly (outside Docker) with Python ≥ 3.12:
-
-```bash
+# Or locally, outside Docker
 cd scanner-app
 pip install -r requirements.txt
 python src/main.py --url https://example.com
@@ -100,27 +178,10 @@ python src/main.py --url https://example.com
 
 ---
 
-## Scoring
-
-| Source | Checks | Points each | Max |
-|--------|--------|-------------|-----|
-| Automated (headers + SSL) | 9 | 5 | 45 |
-| Questionnaire | 11 | 5 | 55 |
-| **Total** | | | **100** |
-
-| Score | Risk Level |
-|-------|-----------|
-| ≥ 80 | LOW |
-| 60–79 | MEDIUM |
-| 40–59 | HIGH |
-| < 40 | CRITICAL |
-
----
-
-## Environment Variables
+## 10. Configuration
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+|---|---|---|
 | `SCANNER_PORT` | `8000` | Web dashboard port |
 | `GRAFANA_PORT` | `3000` | Grafana port |
 | `SQLITE_DB_PATH` | `/app/data/vscan.db` | Database path |
@@ -130,23 +191,23 @@ python src/main.py --url https://example.com
 
 ---
 
-## Project Structure
+## 11. Skills Demonstrated
 
-```
-vscan/
-├── scanner-app/
-│   ├── src/
-│   │   ├── main.py          # CLI entrypoint (click)
-│   │   ├── web_server.py    # FastAPI web server  ← NEW
-│   │   ├── dashboard.html   # Web dashboard UI    ← NEW
-│   │   ├── scanner.py       # HTTP header & SSL checks
-│   │   ├── scoring.py       # Risk scoring engine
-│   │   └── database.py      # SQLite persistence
-│   ├── questionnaire.json   # Default questionnaire values
-│   ├── requirements.txt
-│   └── Dockerfile
-├── grafana/                 # Grafana provisioning & dashboards
-├── scripts/                 # Utility scripts
-├── docker-compose.yml
-└── .env
-```
+- Third-party / vendor risk assessment methodology
+- Control mapping to ISO 27001 and NIST CSF
+- Risk scoring and tiering logic
+- API design and backend development (FastAPI)
+- Data persistence and dashboarding (SQLite, Grafana)
+- Containerized deployment (Docker Compose)
+
+---
+
+## 12. Roadmap
+
+- [ ] Expand questionnaire library to cover SOC 2 and GDPR-specific controls
+- [ ] Add authenticated multi-user access for enterprise-style role separation
+- [ ] Automated PDF export of vendor risk reports
+- [ ] Cloud deployment (AWS/Azure) for a public-facing demo instance
+
+---
+
