@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  # ─────────────────────────────────────────────
+  # Python Scanner Application  (Web API + CLI)
+  # ─────────────────────────────────────────────
+  scanner-app:
+    build:
+      context: ./scanner-app
+      dockerfile: Dockerfile
+    container_name: scanner-app
+    ports:
+      - "${SCANNER_PORT:-8000}:8000"
+    volumes:
+      - sqlite_data:/app/data
+      - ./scanner-app/src:/app/src
+      - ./scanner-app/questionnaire.json:/app/questionnaire.json
+    environment:
+      SQLITE_DB_PATH: ${SQLITE_DB_PATH:-/app/data/vscan.db}
+      QUESTIONNAIRE_PATH: /app/questionnaire.json
+      LOG_LEVEL: ${SCANNER_LOG_LEVEL:-INFO}
+      VSCAN_API_KEY: ${VSCAN_API_KEY}
+    networks:
+      - vscan-net
+    restart: unless-stopped
+    # Runs the FastAPI web server; CLI still accessible via:
+    #   docker exec -it scanner-app python src/main.py --url https://example.com
+    command: ["uvicorn", "web_server:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src", "--reload"]
+
+  # ─────────────────────────────────────────────
+  # Grafana Dashboard
+  # ─────────────────────────────────────────────
+  grafana-ui:
+    image: grafana/grafana:latest
+    container_name: grafana-ui
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - sqlite_data:/app/data:ro          # read-only access to the same DB
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: frser-sqlite-datasource
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    networks:
+      - vscan-net
+    depends_on:
+      - scanner-app
+    restart: unless-stopped
+
+# ─────────────────────────────────────────────
+# Named Volumes
+# ─────────────────────────────────────────────
+volumes:
+  sqlite_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# ─────────────────────────────────────────────
+# Network
+# ─────────────────────────────────────────────
+networks:
+  vscan-net:
+    driver: bridge

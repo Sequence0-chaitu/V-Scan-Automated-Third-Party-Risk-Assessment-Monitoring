@@ -1,0 +1,108 @@
+{
+  "title": "V-Scan Risk Dashboard",
+  "uid": "vscan-main",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["vscan", "security", "risk"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Overall Risk Level",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "vscan-sqlite" },
+      "targets": [
+        {
+          "rawQueryText": "SELECT score FROM scans ORDER BY timestamp DESC LIMIT 1",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["last"] },
+        "orientation": "auto",
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "orange", "value": 40   },
+              { "color": "yellow", "value": 60   },
+              { "color": "green",  "value": 80   }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Vendor Score History",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "vscan-sqlite" },
+      "targets": [
+        {
+          "rawQueryText": "SELECT timestamp * 1000 AS time, score, vendor_url AS metric FROM scans ORDER BY timestamp ASC",
+          "queryType": "timeseries",
+          "refId": "A",
+          "timeColumns": ["time"]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 3,
+      "title": "Compliance Breakdown (Latest Scan)",
+      "type": "barchart",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "vscan-sqlite" },
+      "targets": [
+        {
+          "rawQueryText": "SELECT c.check_name, c.passed, c.iso_control, c.nist_control FROM scan_checks c INNER JOIN scans s ON c.scan_id = s.id WHERE s.id = (SELECT MAX(id) FROM scans) ORDER BY c.passed DESC",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "passed" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red",   "value": null },
+                    { "color": "green", "value": 1    }
+                  ]
+                }
+              },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
