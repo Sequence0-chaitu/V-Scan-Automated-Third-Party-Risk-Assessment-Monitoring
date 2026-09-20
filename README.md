@@ -1,6 +1,6 @@
 # V-Scan — Automated Third-Party Risk Assessment Platform
 
-**A GRC-focused security tool that evaluates vendor risk against ISO 27001 and NIST CSF controls, combining automated technical scanning with structured compliance questionnaires.**
+**A GRC-focused security tool that evaluates vendor risk against ISO 27001 and NIST CSF controls, combining automated technical scanning with structured compliance questionnaires.(Only for educational purposes)**
 
 ---
 
